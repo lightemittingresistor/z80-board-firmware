@@ -2,25 +2,33 @@
 
 TARGET=atmega8515
 
-CC=avr-gcc
-OBJDUMP=avr-objdump
-OBJCOPY=avr-objcopy
-
-CFLAGS=-mmcu=${TARGET} -g -O2 -I$(CURDIR)/include
+PROJECT=z80-board-firmware
 
 SOURCES = \
 	src/main.c \
 	src/${TARGET}.c
 
-# two stages to replace different parts of the filename
-OBJECTS_TEMP = $(SOURCES:src/%=build/%)
-OBJECTS = $(OBJECTS_TEMP:.c=.o)
+CC=avr-gcc
+AS=avr-as
+OBJDUMP=avr-objdump
+OBJCOPY=avr-objcopy
 
-all: build/z80-board-firmware.elf build/z80-board-firmware.lst build/z80-board-firmware.hex
+CFLAGS=-mmcu=${TARGET} -g -O2 -I$(CURDIR)/include
+
+# three stages to replace different parts of the filename
+OBJECTS_TEMP = $(SOURCES:src/%=build/%)
+OBJECTS_C = $(OBJECTS_TEMP:.c=.o)
+OBJECTS = $(OBJECTS_C:.S=.o)
+
+all: build/${PROJECT}.elf build/${PROJECT}.lst build/${PROJECT}.hex
 
 build/%.o : src/%.c
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
+
+build/%.o : src/%.S
+	mkdir -p `dirname $@`
+	${AS} -mmcu=${TARGET} $< -o $@
 
 %.lst : %.elf
 	${OBJDUMP} -h -S $< > $@
@@ -28,7 +36,7 @@ build/%.o : src/%.c
 %.hex : %.elf
 	${OBJCOPY} -j .text -j .data -O ihex $< $@
 
-build/z80-board-firmware.elf: ${OBJECTS}
+build/${PROJECT}.elf: ${OBJECTS}
 	${CC} ${CFLAGS} -Wl,-Map,$(@:.elf=.map) $< -o $@
 	avr-size --format=sysv $@
 
