@@ -1,16 +1,14 @@
 /******************************************************************************
  * z80-board-firmware
- * main.c - main entry point
+ * 328-serial-test.c - prove out serial code on an arduino board
  *
  *****************************************************************************/
 
 #include "serial.h"
-#include "memorybus.h"
 #include "comms-protocol.h"
 
 int main()
 {
-    memory_init();
     serial_init(9600);
     protocol_init();
 
