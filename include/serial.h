@@ -48,4 +48,7 @@ unsigned int serial_get(unsigned char* buffer, unsigned int size);
 // send the contents of a buffer
 void serial_put(const unsigned char* buffer, unsigned int size);
 
+// like serial_put but where buffer is in flash space
+void serial_put_P(const unsigned char* buffer, unsigned int size);
+
 #endif

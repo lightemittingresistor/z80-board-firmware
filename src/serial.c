@@ -12,6 +12,8 @@
 #error F_CPU must be defined for this to work
 #endif
 
+#include <avr/pgmspace.h>
+
 // TODO: Use buffers for reliability and implement basic flow control
 
 void serial_init(long baud)
@@ -68,5 +70,13 @@ void serial_put(const unsigned char* buffer, unsigned int size)
     for(unsigned int i = 0; i < size; ++i)
     {
         serial_putchar(buffer[i]);
+    }
+}
+
+void serial_put_P(const unsigned char* buffer, unsigned int size)
+{
+    for(unsigned int i = 0; i < size; ++i)
+    {
+        serial_putchar(pgm_read_byte(buffer + i));
     }
 }

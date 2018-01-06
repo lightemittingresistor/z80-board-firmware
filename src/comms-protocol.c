@@ -10,8 +10,8 @@
 #include <stdbool.h>
 #include <string.h>
 
-// TODO: Make this work with PROGMEM
-//#include <avr/pgmspace.h>
+#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 
 enum states
 {
@@ -39,16 +39,28 @@ struct command_entry
     void (*handler)(const char*,int);
 };
 
-void command_help(const char* args, int length);
+// Helper to set up the fields needed
+#define COMMAND_FIELDS(NAME,DESC) \
+void command_ ##NAME (const char* args, int length);\
+const char NAME ##_name[] PROGMEM = # NAME; \
+const char NAME ##_desc[] PROGMEM = DESC
 
-static const struct command_entry commands[] = 
+// subtract 1 from length since we don't care about the null character
+#define COMMAND_TABLE_ENTRY(NAME) \
+{\
+    .name = NAME ##_name, \
+    .helpstring = NAME ##_desc, \
+    .length = sizeof(NAME ##_name)-1, \
+    .handler = command_ ##NAME \
+}
+
+COMMAND_FIELDS(help,"Displays this help");
+COMMAND_FIELDS(serialnumber,"Gets the serial number of the kit");
+
+static const struct command_entry commands[] PROGMEM = 
 {
-    {
-        .name = "help",
-        .helpstring = "Displays this help",
-        .length = 4,
-        .handler = command_help
-    },
+    COMMAND_TABLE_ENTRY(help),
+    COMMAND_TABLE_ENTRY(serialnumber),
     { .name = NULL }
 };
 
@@ -78,12 +90,9 @@ static bool compare_commands(char* buffer, int size, const char* command, int co
 {
     if(size != command_length)
     {
-        char msg[128];
-        sprintf(msg, "Length %d does not match %d\n", size, command_length);
-        serial_put((unsigned char*)msg, strlen(msg));
         return false;
     }
-    return strncmp(buffer, command, size) == 0;
+    return strncmp_P(buffer, command, size) == 0;
 }
 
 void protocol_process()
@@ -92,11 +101,12 @@ void protocol_process()
     {
         int first_space = find_space(state.command, 0, state.command_ptr);
         bool foundHandler = false;
-        for(const struct command_entry* current = commands; current->name; ++current)
+        for(const struct command_entry* current = commands; pgm_read_ptr(&current->name); ++current)
         {
-            if(compare_commands(state.command, first_space, current->name, current->length))
+            if(compare_commands(state.command, first_space, pgm_read_ptr(&current->name), pgm_read_word(&current->length)))
             {
-                current->handler(state.command + first_space+1, state.command_ptr - first_space);
+                void (*handler)(const char*,int) = pgm_read_ptr(&current->handler);
+                handler(state.command + first_space+1, state.command_ptr - first_space);
                 foundHandler = true;
                 break;
             }
@@ -104,9 +114,10 @@ void protocol_process()
 
         if(!foundHandler)
         {
-            static const char errormsg[] = "Unknown command ";
-            serial_put((const unsigned char*)errormsg, sizeof(errormsg));
+            static const char errormsg[] PROGMEM = "Unknown command ";
+            serial_put_P((const unsigned char*)errormsg, sizeof(errormsg));
             serial_put((const unsigned char*)state.command, first_space);
+            serial_putchar('\n');
         }
     }
 
@@ -143,8 +154,8 @@ void protocol_state_idle(unsigned char byte)
             }
             else
             {
-                static const char buffer_errormsg[] = "Command Buffer Overflow\n";
-                serial_put((unsigned char*)buffer_errormsg, sizeof(buffer_errormsg));
+                static const char buffer_errormsg[] PROGMEM= "\nCommand Buffer Overflow\n";
+                serial_put_P((unsigned char*)buffer_errormsg, sizeof(buffer_errormsg));
                 protocol_process();
             }
         }
@@ -161,23 +172,34 @@ void protocol_handle(unsigned char byte)
 
 void command_help(const char* buffer, int paramcount)
 {
-    static const char header[] = 
+    static const char header[] PROGMEM = 
         "z80-board command interface\n"
         "--------------------------------\n"
         "  command  |  description\n"
         "--------------------------------\n";
-    serial_put((const unsigned char*)header, sizeof(header));
-    for(const struct command_entry* current = commands; current->name; ++current)
+    serial_put_P((const unsigned char*)header, sizeof(header));
+    for(const struct command_entry* current = commands; pgm_read_ptr(&current->name); ++current)
     {
         serial_put((const unsigned char*)"  ", 2);
-        serial_put((const unsigned char*)current->name, current->length);
+        serial_put_P((const unsigned char*)pgm_read_ptr(&current->name), pgm_read_word(&current->length));
         // pad out to divider
-        for(int i=current->length; i < 9; ++i)
+        for(int i=pgm_read_word(&current->length); i < 9; ++i)
         {
             serial_putchar(' ');
         }
         serial_put((const unsigned char*)"| ", 2);
-        serial_put((const unsigned char*)current->helpstring, strlen(current->helpstring));
+        serial_put_P((const unsigned char*)pgm_read_ptr(&current->helpstring), strlen_P(pgm_read_ptr(&current->helpstring)));
         serial_putchar('\n');
     }
+}
+
+void command_serialnumber(const char* buffer, int paramcount)
+{
+    static const char header[] PROGMEM = 
+        "Kit Serial Number: ";
+    serial_put_P((const unsigned char*)header, sizeof(header));
+
+    char pbuffer[32];
+    sprintf(pbuffer, "%ld\n",eeprom_read_dword(0));
+    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
 }
