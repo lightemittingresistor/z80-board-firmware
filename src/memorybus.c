@@ -8,6 +8,7 @@
 #include "device.h"
 
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include <stdbool.h>
 
@@ -75,8 +76,10 @@ unsigned char memory_read(long address)
 
     databus_input();
     addressbus_set(address);
+    _delay_us(1);
     controllines_memreq(false); // active high, remember
     controllines_read(false);
+    _delay_us(1);
     unsigned char retval = databus_read();
     controllines_read(true);
 
@@ -105,6 +108,8 @@ void memory_write(long address, unsigned char data)
 
     databus_idle();
 
+    // wait for write to happen
+    while(memory_read(address) != data);
 
     SREG = stored_sreg;
 }

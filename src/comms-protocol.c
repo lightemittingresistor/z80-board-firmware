@@ -5,6 +5,7 @@
  *****************************************************************************/
 
 #include "comms-protocol.h"
+#include "memorybus.h"
 #include "serial.h"
 
 #include <stdbool.h>
@@ -12,6 +13,8 @@
 
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
 
 enum states
 {
@@ -56,20 +59,42 @@ const char NAME ##_desc[] PROGMEM = DESC
 
 COMMAND_FIELDS(help,"Displays this help");
 COMMAND_FIELDS(serialnumber,"Gets the serial number of the kit");
+COMMAND_FIELDS(reset,"Resets the interface");
+COMMAND_FIELDS(peek,"peek");
+COMMAND_FIELDS(poke,"poke");
 
 static const struct command_entry commands[] PROGMEM = 
 {
     COMMAND_TABLE_ENTRY(help),
     COMMAND_TABLE_ENTRY(serialnumber),
+    COMMAND_TABLE_ENTRY(reset),
+    COMMAND_TABLE_ENTRY(peek),
+    COMMAND_TABLE_ENTRY(poke),
     { .name = NULL }
 };
 
+void protocol_startup()
+{
+    static const char welcomemsg[] PROGMEM =
+        "z80-board command interface\n"
+        "Started.\n"
+        ">";
+    serial_put_P((const unsigned char*)welcomemsg, sizeof(welcomemsg));
+}
+
 void protocol_init()
 {
+    // might have been turned on by reset
+    MCUCSR = 0;
+    wdt_disable();
+
     state.current_state = state_idle;
     state.command_ptr = 0;
     state.command[0] = '\0';
     state.echo = true;
+
+    // send the init message
+    protocol_startup();
 }
 
 static int find_space(char* buffer, int start, int end)
@@ -202,4 +227,139 @@ void command_serialnumber(const char* buffer, int paramcount)
     char pbuffer[32];
     sprintf(pbuffer, "%ld\n",eeprom_read_dword(0));
     serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+}
+
+void command_reset(const char* buffer, int paramcount)
+{
+    cli();
+    wdt_enable(WDTO_15MS);
+    while(1);
+}
+
+void command_peek(const char* buffer, int paramcount)
+{
+    if(buffer[0] != '0' || buffer[1] != 'x')
+    {
+        static const char error[] PROGMEM = 
+            "usage: 0xDD or 0xdd\n";
+        serial_put_P((const unsigned char*)error, sizeof(error));
+        return;
+    }
+    static const char message1[] PROGMEM = 
+        "Taking control of bus...\n";
+    serial_put_P((const unsigned char*)message1, sizeof(message1));
+    memory_takebus();
+
+    unsigned int address = 0;
+    for(int i=2; i < paramcount; ++i)
+    {
+        if(buffer[i] >= '0' && buffer[i] <= '9')
+        {
+            address = address << 4;
+            address += buffer[i] - '0';
+        }
+        else if(buffer[i] >= 'A' && buffer[i] <= 'F')
+        {
+            address = address << 4;
+            address += buffer[i] - 'A';
+            address += 10;
+        }
+        else if(buffer[i] >= 'a' && buffer[i] <= 'f')
+        {
+            address = address << 4;
+            address += buffer[i] - 'a';
+            address += 10;
+        }
+    }
+
+    char pbuffer[64];
+    sprintf(pbuffer, "Reading 0x%x...",address);
+    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+
+    unsigned char result = memory_read(address);
+
+    sprintf(pbuffer, "  Result was 0x%hhx\n",result);
+    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+
+    memory_releasebus();
+}
+
+void command_poke(const char* buffer, int paramcount)
+{
+    if(buffer[0] != '0' || buffer[1] != 'x')
+    {
+        static const char error[] PROGMEM = 
+            "usage: 0xDD or 0xdd\n";
+        serial_put_P((const unsigned char*)error, sizeof(error));
+        return;
+    }
+    static const char message1[] PROGMEM = 
+        "Taking control of bus...\n";
+    serial_put_P((const unsigned char*)message1, sizeof(message1));
+    memory_takebus();
+
+    unsigned int address = 0;
+    unsigned char data = 0;
+    int phase = 1;
+    for(int i=2; i < paramcount; ++i)
+    {
+        if(phase == 1)
+        {
+            if(buffer[i] >= '0' && buffer[i] <= '9')
+            {
+                address = address << 4;
+                address += buffer[i] - '0';
+            }
+            else if(buffer[i] >= 'A' && buffer[i] <= 'F')
+            {
+                address = address << 4;
+                address += buffer[i] - 'A';
+                address += 10;
+            }
+            else if(buffer[i] >= 'a' && buffer[i] <= 'f')
+            {
+                address = address << 4;
+                address += buffer[i] - 'a';
+                address += 10;
+            }
+            else if(buffer[i] == ' ')
+            {
+                ++phase;
+                i += 2; // skip 0x
+            }
+        }
+        else
+        {
+            if(buffer[i] >= '0' && buffer[i] <= '9')
+            {
+                data = data << 4;
+                data += buffer[i] - '0';
+            }
+            else if(buffer[i] >= 'A' && buffer[i] <= 'F')
+            {
+                data = data << 4;
+                data += buffer[i] - 'A';
+                data += 10;
+            }
+            else if(buffer[i] >= 'a' && buffer[i] <= 'f')
+            {
+                data = data << 4;
+                data += buffer[i] - 'a';
+                data += 10;
+            }
+        }
+    }
+
+    char pbuffer[64];
+    sprintf(pbuffer, "writing 0x%x -> 0x%hhx...",address, data);
+    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+
+    memory_write(address, data);
+
+    unsigned char result = memory_read(address);
+
+    sprintf(pbuffer, "  Result was 0x%hhx\n",result);
+    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+
+    memory_releasebus();
 }

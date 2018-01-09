@@ -70,6 +70,9 @@ void databus_output()
 
     // low bits
     PORTB &= 0x1f;
+    DDRB = 0x1f;
+
+    datamaster = true;
 }
 
 void databus_input()
@@ -81,6 +84,8 @@ void databus_input()
 
     // Port E 2:0 all inputs (with pullup)
     DDRE = 0x00; PORTE = 0x07;
+
+    datamaster = false;
 }
 
 void databus_idle()
@@ -90,4 +95,6 @@ void databus_idle()
 
     // Port E 2:0 all inputs (no pullup)
     DDRE = 0x00; PORTE = 0x00;
+
+    datamaster = false;
 }

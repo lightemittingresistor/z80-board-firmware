@@ -55,6 +55,9 @@ build/${PROJECT}.elf: ${OBJECTS}
 	${CC} ${CFLAGS} -Wl,-Map,$(@:.elf=.map) $^ -o $@
 	avr-size --format=avr --mcu=${TARGET} $@
 
+flash : build/${PROJECT}.hex
+	avrdude -p m8515 -c usbasp -U flash:w:build/${PROJECT}.hex -U lfuse:w:0xEF:m -U hfuse:w:0xD9:m
+
 clean:
 	rm -rf build/*
 	rm -rf build-tests/*
