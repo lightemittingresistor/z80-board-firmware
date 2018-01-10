@@ -22,9 +22,12 @@ void serial_init(long baud)
     unsigned char stored_sreg = SREG;
     cli();
     // set up baud rate
-    const long ubrr = (F_CPU/(16*baud))-1;
+    const long ubrr = (F_CPU/(8*baud))-1;
     UBRRH = (unsigned char)(ubrr >> 8);
     UBRRL = (unsigned char)(ubrr);
+
+    //enable double clock rate
+    UCSRA = (1 << U2X);
 
     //enable TX and RX (8 bit)
     UCSRB = (1 << RXEN) | (1 << TXEN);

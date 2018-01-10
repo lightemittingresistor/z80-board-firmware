@@ -11,7 +11,7 @@
 int main()
 {
     memory_init();
-    serial_init(9600);
+    serial_init(57600);
     protocol_init();
 
     while(1)
