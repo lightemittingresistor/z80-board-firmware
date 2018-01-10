@@ -8,11 +8,15 @@
 #include "memorybus.h"
 #include "comms-protocol.h"
 
+#include <avr/interrupt.h>
+
 int main()
 {
     memory_init();
     serial_init(57600);
     protocol_init();
+
+    sei();
 
     while(1)
     {
