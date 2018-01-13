@@ -7,6 +7,8 @@
 #include "comms-protocol.h"
 #include "memorybus.h"
 #include "serial.h"
+#include "stringtools.h"
+#include "hex-receiver.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -19,7 +21,13 @@
 enum states
 {
     state_idle,
+    state_hex,
 };
+
+// strings we use in more than one place
+static const char result_msg[] PROGMEM = 
+        "  Result was 0x";
+static const char three_dots[] PROGMEM = "...\n";
 
 #define COMMAND_BUFFER_SIZE 32
 
@@ -33,6 +41,8 @@ struct protocol_state
 };
 
 static struct protocol_state state;
+
+hex_parser_context hex_ctx;
 
 struct command_entry
 {
@@ -62,6 +72,7 @@ COMMAND_FIELDS(serialnumber,"Gets the serial number of the kit");
 COMMAND_FIELDS(reset,"Resets the interface");
 COMMAND_FIELDS(peek,"peek");
 COMMAND_FIELDS(poke,"poke");
+COMMAND_FIELDS(sendhex,"sendhex");
 
 static const struct command_entry commands[] PROGMEM = 
 {
@@ -70,6 +81,7 @@ static const struct command_entry commands[] PROGMEM =
     COMMAND_TABLE_ENTRY(reset),
     COMMAND_TABLE_ENTRY(peek),
     COMMAND_TABLE_ENTRY(poke),
+    COMMAND_TABLE_ENTRY(sendhex),
     { .name = NULL }
 };
 
@@ -92,6 +104,8 @@ void protocol_init()
     state.command_ptr = 0;
     state.command[0] = '\0';
     state.echo = true;
+
+    hex_init(&hex_ctx);
 
     // send the init message
     protocol_startup();
@@ -193,6 +207,34 @@ void protocol_handle(unsigned char byte)
     {
         protocol_state_idle(byte);
     }
+    else if(state.current_state == state_hex)
+    {
+        hex_parse_char(&hex_ctx, byte);
+        if(hex_ctx.state == HEX_PARSER_STATE_GOT_DATA)
+        {
+            if(hex_parse_check_checksum(&hex_ctx))
+            {
+                static const char noerrormsg[] PROGMEM = 
+                    "Got correct line";
+                serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
+                // TODO: Do something with this
+            }
+            else
+            {
+                static const char errormsg[] PROGMEM = 
+                    "Invalid hex checksum";
+                serial_put_P((unsigned const char*)errormsg, sizeof(errormsg));
+                state.current_state = state_idle;
+            }
+        }
+        else if(hex_ctx.state == HEX_PARSER_STATE_DONE)
+        {
+            static const char noerrormsg[] PROGMEM = 
+                    "Got end of file";
+                serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
+            state.current_state = state_idle;
+        }
+    }
 }
 
 void command_help(const char* buffer, int paramcount)
@@ -225,8 +267,9 @@ void command_serialnumber(const char* buffer, int paramcount)
     serial_put_P((const unsigned char*)header, sizeof(header));
 
     char pbuffer[32];
-    sprintf(pbuffer, "%ld\n",eeprom_read_dword(0));
+    uinttohexstring(eeprom_read_dword(0), pbuffer, 32);
     serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+    serial_putchar('\n');
 }
 
 void command_reset(const char* buffer, int paramcount)
@@ -272,14 +315,21 @@ void command_peek(const char* buffer, int paramcount)
         }
     }
 
-    char pbuffer[64];
-    sprintf(pbuffer, "Reading 0x%x...",address);
-    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+    char pbuffer[32];
+
+    static const char reading_msg[] PROGMEM = 
+        "Reading 0x";
+    serial_put_P((unsigned char*)reading_msg, sizeof(reading_msg));
+    uinttohexstring(address, pbuffer, 32);
+    serial_put((unsigned char*)pbuffer, 32);
+    serial_put_P((unsigned char*)three_dots, sizeof(three_dots));
 
     unsigned char result = memory_read(address);
 
-    sprintf(pbuffer, "  Result was 0x%hhx\n",result);
-    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+    serial_put_P((unsigned char*)result_msg, sizeof(result_msg));
+    uinttohexstring(result, pbuffer, 32);
+    serial_put((unsigned char*)pbuffer, 32);
+    serial_putchar('\n');
 
     memory_releasebus();
 }
@@ -350,16 +400,34 @@ void command_poke(const char* buffer, int paramcount)
         }
     }
 
-    char pbuffer[64];
-    sprintf(pbuffer, "writing 0x%x -> 0x%hhx...",address, data);
-    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+    char pbuffer[32];
+
+    static const char writing_msg[] PROGMEM = 
+        "writing 0x";
+    serial_put_P((unsigned char*)writing_msg, sizeof(writing_msg));
+    uinttohexstring(address, pbuffer, 32);
+    serial_put((unsigned char*)pbuffer, 32);
+
+    static const char to_msg[] PROGMEM = " -> 0x";
+    serial_put_P((unsigned char*)to_msg, sizeof(to_msg));
+    uinttohexstring(data, pbuffer, 32);
+    serial_put((unsigned char*)pbuffer, 32);
+
+    serial_put_P((unsigned char*)three_dots, sizeof(three_dots));
 
     memory_write(address, data);
 
     unsigned char result = memory_read(address);
 
-    sprintf(pbuffer, "  Result was 0x%hhx\n",result);
-    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
+    serial_put_P((unsigned char*)result_msg, sizeof(result_msg));
+    uinttohexstring(result, pbuffer, 32);
+    serial_put((unsigned char*)pbuffer, 32);
+    serial_putchar('\n');
 
     memory_releasebus();
+}
+
+void command_sendhex(const char* buffer, int paramcount)
+{
+    state.current_state = state_hex;
 }

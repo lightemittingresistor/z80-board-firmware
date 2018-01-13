@@ -11,6 +11,8 @@ SOURCES = \
 	src/serial.c \
 	src/memorybus.c \
 	src/comms-protocol.c \
+	src/stringtools.c \
+	src/hex-receiver.c \
 	src/${TARGET}.c
 
 
@@ -19,6 +21,7 @@ AS=avr-as
 OBJDUMP=avr-objdump
 OBJCOPY=avr-objcopy
 
+# -O3 is great but inlines some chunky functions with LTO therefore making the code huge!
 CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O3 -I$(CURDIR)/include -Wall -Werror \
 		-Wl,--gc-sections -flto
 

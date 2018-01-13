@@ -26,7 +26,9 @@ void serial_init(long baud);
 #define UCSZ0 UCSZ00
 #define UDR UDR0
 #define UDRE UDRE0
-
+#define MCUCSR MCUCR
+#define U2X U2X0
+#define RXCIE RXCIE0
 #endif
 
 static inline bool serial_data_available()

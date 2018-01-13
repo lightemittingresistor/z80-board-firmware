@@ -17,8 +17,8 @@
 
 #include <avr/pgmspace.h>
 
-#define SERIAL_BUFFER_SIZE 32
-#define SERIAL_BUFFER_HIGH_MARK 28
+#define SERIAL_BUFFER_SIZE 64
+#define SERIAL_BUFFER_HIGH_MARK 58
 char serialBuffer[SERIAL_BUFFER_SIZE];
 
 // volatile since it's written to from an ISR
@@ -26,7 +26,7 @@ volatile short bufferpointer = 0;
 short readbufferpointer = 0;
 bool bufferfull = false;
 
-inline int serial_countSerialBufferSize()
+int serial_countSerialBufferSize()
 {
     if(readbufferpointer == bufferpointer)
     {
@@ -47,10 +47,16 @@ ISR(USART_RX_vect)
     // overflow? discard.
     if(serial_countSerialBufferSize() == SERIAL_BUFFER_SIZE)
     {
+        static const char overflow[] PROGMEM =
+            "Serial buffer overflow!!!!!!\n";
+        serial_put_P((unsigned const char*)overflow, sizeof(overflow));
         return;
     }
 
-    serialBuffer[bufferpointer++] = UDR;
+    char c = UDR;
+    serialBuffer[bufferpointer++] = c;
+    //serial_putchar(c);
+
     if(bufferpointer >= SERIAL_BUFFER_SIZE)
     {
         bufferpointer = 0;
@@ -94,13 +100,16 @@ void serial_init(long baud)
 char serial_getchar()
 {
     unsigned char stored_sreg = SREG;
-    // enable interrupts so we get some characters
-    sei();
-    while(bufferpointer == readbufferpointer);
+    if(bufferpointer == readbufferpointer)
+    {
+        // enable interrupts so we get some characters
+        sei();
+        while(bufferpointer == readbufferpointer);
+    }
 
     cli();
-
     char result = serialBuffer[readbufferpointer++];
+    SREG = stored_sreg;
 
     if(readbufferpointer >= SERIAL_BUFFER_SIZE)
     {
@@ -115,7 +124,6 @@ char serial_getchar()
         bufferfull = false;
     }
 
-    SREG = stored_sreg;
     return result;
 }
 
@@ -158,6 +166,10 @@ void serial_put(const unsigned char* buffer, unsigned int size)
 {
     for(unsigned int i = 0; i < size; ++i)
     {
+        if(buffer[i] == '\0')
+        {
+            break;
+        }
         serial_putchar(buffer[i]);
     }
 }
@@ -166,6 +178,11 @@ void serial_put_P(const unsigned char* buffer, unsigned int size)
 {
     for(unsigned int i = 0; i < size; ++i)
     {
-        serial_putchar(pgm_read_byte(buffer + i));
+        char c = pgm_read_byte(buffer + i);
+        if(c == '\0')
+        {
+            break;
+        }
+        serial_putchar(c);
     }
 }
