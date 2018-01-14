@@ -217,7 +217,8 @@ void protocol_handle(unsigned char byte)
                 static const char noerrormsg[] PROGMEM = 
                     "Got correct line";
                 serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
-                // TODO: Do something with this
+                
+                memory_writemultiple(hex_ctx.address, hex_ctx.data, hex_ctx.byte_count);
             }
             else
             {
@@ -225,6 +226,7 @@ void protocol_handle(unsigned char byte)
                     "Invalid hex checksum";
                 serial_put_P((unsigned const char*)errormsg, sizeof(errormsg));
                 state.current_state = state_idle;
+                memory_releasebus();
             }
         }
         else if(hex_ctx.state == HEX_PARSER_STATE_DONE)
@@ -233,6 +235,7 @@ void protocol_handle(unsigned char byte)
                     "Got end of file";
                 serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
             state.current_state = state_idle;
+            memory_releasebus();
         }
     }
 }
@@ -430,4 +433,5 @@ void command_poke(const char* buffer, int paramcount)
 void command_sendhex(const char* buffer, int paramcount)
 {
     state.current_state = state_hex;
+    memory_releasebus();
 }

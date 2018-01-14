@@ -70,10 +70,6 @@ unsigned char memory_read(long address)
 {
     if(!busmaster) return 0x00;
 
-    // store interrupt state
-    unsigned char stored_sreg = SREG;
-    cli();
-
     databus_input();
     addressbus_set(address);
     _delay_us(1);
@@ -85,18 +81,12 @@ unsigned char memory_read(long address)
 
     databus_idle();
 
-    SREG = stored_sreg;
-
     return retval;
 }
 
 void memory_write(long address, unsigned char data)
 {
     if(!busmaster) return;
-
-    // store interrupt state
-    unsigned char stored_sreg = SREG;
-    cli();
 
     // I don't think we're clocking fast enough to need waits here
     databus_output();
@@ -110,6 +100,34 @@ void memory_write(long address, unsigned char data)
 
     // wait for write to happen
     while(memory_read(address) != data);
+}
 
-    SREG = stored_sreg;
+void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsigned long length)
+{
+    if(!busmaster) return;
+
+    databus_output();
+    controllines_memreq(false);
+
+    unsigned long counter = 0;
+
+    while(counter < length)
+    {
+        unsigned long sectionStartAddress = startAddress + counter;
+        unsigned long currentAddress = sectionStartAddress;
+        while((sectionStartAddress & 0xff00) == (currentAddress & 0xff00) 
+                && counter < length)
+        {
+            addressbus_set(currentAddress++);
+            databus_set(data[counter++]);
+            controllines_write(false);
+            _delay_us(1);
+            controllines_write(true);
+        }
+
+        // wait for write to happen
+        while(memory_read(currentAddress) != data[counter-1]);
+    }
+
+    databus_idle();
 }

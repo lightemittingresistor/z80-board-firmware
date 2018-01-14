@@ -25,5 +25,6 @@ void memory_releasebus();
 
 unsigned char memory_read(long address);
 void memory_write(long address, unsigned char data);
+void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsigned long length);
 
 #endif

@@ -22,7 +22,7 @@ OBJDUMP=avr-objdump
 OBJCOPY=avr-objcopy
 
 # -O3 is great but inlines some chunky functions with LTO therefore making the code huge!
-CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O3 -I$(CURDIR)/include -Wall -Werror \
+CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O2 -I$(CURDIR)/include -Wall -Werror \
 		-Wl,--gc-sections -flto
 
 # three stages to replace different parts of the filename
