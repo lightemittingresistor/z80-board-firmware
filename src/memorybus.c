@@ -126,7 +126,7 @@ void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsig
         }
 
         // wait for write to happen
-        while(memory_read(currentAddress) != data[counter-1]);
+        while(memory_read(currentAddress-1) != data[counter-1]);
     }
 
     databus_idle();

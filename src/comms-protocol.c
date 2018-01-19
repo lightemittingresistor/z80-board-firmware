@@ -433,5 +433,11 @@ void command_poke(const char* buffer, int paramcount)
 void command_sendhex(const char* buffer, int paramcount)
 {
     state.current_state = state_hex;
-    memory_releasebus();
+    static const char taking_msg[] PROGMEM = 
+        "Taking control of bus... ";
+    serial_put_P((unsigned char*)taking_msg, sizeof(taking_msg));
+    memory_takebus();
+    static const char taken_msg[] PROGMEM = 
+        "Taken control of bus... ";
+    serial_put_P((unsigned char*)taken_msg, sizeof(taken_msg));
 }
