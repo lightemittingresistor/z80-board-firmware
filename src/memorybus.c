@@ -72,10 +72,10 @@ unsigned char memory_read(long address)
 
     databus_input();
     addressbus_set(address);
-    _delay_us(1);
+    _delay_us(10);
     controllines_memreq(false); // active high, remember
     controllines_read(false);
-    _delay_us(1);
+    _delay_us(10);
     unsigned char retval = databus_read();
     controllines_read(true);
 
