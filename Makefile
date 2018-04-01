@@ -59,7 +59,7 @@ build/${PROJECT}.elf: ${OBJECTS}
 	avr-size --format=avr --mcu=${TARGET} $@
 
 flash : build/${PROJECT}.hex
-	avrdude -p m8515 -c usbasp -U flash:w:build/${PROJECT}.hex -U lfuse:w:0xEF:m -U hfuse:w:0xD9:m
+	avrdude -p m8515 -c usbasp -U flash:w:build/${PROJECT}.hex -U lfuse:w:0xEF:m -U hfuse:w:0xD1:m
 
 clean:
 	rm -rf build/*
