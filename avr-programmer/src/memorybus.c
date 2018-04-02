@@ -84,7 +84,7 @@ unsigned char memory_read(long address)
     return retval;
 }
 
-void memory_write(long address, unsigned char data)
+void memory_write_internal(long address, unsigned char data)
 {
     if(!busmaster) return;
 
@@ -97,6 +97,27 @@ void memory_write(long address, unsigned char data)
     controllines_write(true);
 
     databus_idle();
+
+}
+
+void memory_writeprotect_dance()
+{
+    memory_write_internal(0x1555, 0xaa);
+    memory_write_internal(0x0aaa, 0x55);
+    memory_write_internal(0x1555, 0xa0);
+}
+
+void memory_write(long address, unsigned char data)
+{
+    if(!busmaster) return;
+
+    // if we're in ROM, do write protect dance
+    if(address < 0x8000)
+    {
+        memory_writeprotect_dance();
+    }
+
+    memory_write_internal(address, data);
 
     // wait for write to happen
     while(memory_read(address) != data);
@@ -115,6 +136,14 @@ void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsig
     {
         unsigned long sectionStartAddress = startAddress + counter;
         unsigned long currentAddress = sectionStartAddress;
+
+        // If in ROM, handle write protection
+        if(currentAddress < 0x8000)
+        {
+            memory_writeprotect_dance();
+            databus_output();
+        }
+
         while((sectionStartAddress & 0xff00) == (currentAddress & 0xff00) 
                 && counter < length)
         {
