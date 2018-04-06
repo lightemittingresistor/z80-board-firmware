@@ -37,9 +37,12 @@ static inline void databus_set(unsigned char data);
 static inline long addressbus_read();
 static inline void addressbus_set(long address);
 
-
 #if __AVR_ATmega8515__
-#include "atmega8515.h"
+#include "atmega8515/atmega8515.h"
+#elif __AVR_ATmega328P__
+#include "atmega328p/atmega328p.h"
+#else
+#error unknown target
 #endif
 
 #endif
