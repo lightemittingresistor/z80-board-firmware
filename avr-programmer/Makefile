@@ -8,6 +8,7 @@ endif
 ifeq ("$(TARGET)","atmega8515")
 
 AVRDUDE_TARGET=m8515
+ENABLE_USB=0
 ifeq ($(FREQUENCY),)
 FREQUENCY=8000000
 endif
@@ -16,6 +17,7 @@ else
 ifeq ("$(TARGET)","atmega328p")
 
 AVRDUDE_TARGET=m328p
+ENABLE_USB=0
 ifeq ($(FREQUENCY),)
 FREQUENCY=16000000
 endif
@@ -29,7 +31,6 @@ PROJECT=z80-board-firmware
 
 SOURCES = \
 	src/main.c \
-	src/serial.c \
 	src/memorybus.c \
 	src/comms-protocol.c \
 	src/stringtools.c \
@@ -45,9 +46,20 @@ OBJCOPY=avr-objcopy
 CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O2 -I$(CURDIR)/include -Wall -Werror \
 		-Wl,--gc-sections -flto -I$(CURDIR)/include/$(TARGET)
 
+ifeq ($(ENABLE_USB), 1)
+SOURCES += \
+	src/usb.c \
+	vusb-20121206/usbdrv/usbdrv.c \
+	vusb-20121206/usbdrv/usbdrvasm.S \
+	vusb-20121206/usbdrv/oddebug.c
+CFLAGS += -I$(CURDIR)/vusb-20121206/usbdrv/ -DENABLE_VUSB -DDEBUG_LEVEL=1
+else
+SOURCES += \
+	src/serial.c
+endif
 
 # three stages to replace different parts of the filename
-OBJECTS_TEMP = $(SOURCES:src/%=build/%)
+OBJECTS_TEMP = $(SOURCES:%=build/%)
 OBJECTS_C = $(OBJECTS_TEMP:.c=.o)
 OBJECTS = $(OBJECTS_C:.S=.o)
 
@@ -55,13 +67,13 @@ all: build/${PROJECT}-${TARGET}.lst build/${PROJECT}-${TARGET}.hex
 
 include tests.mk
 
-build/%.o : src/%.c
+build/%.o : %.c
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
-build/%.o : src/%.S
+build/%.o : %.S
 	mkdir -p `dirname $@`
-	${AS} -mmcu=${TARGET} $< -o $@
+	${CC} -c ${CFLAGS} $< -o $@
 
 %.lst : %.elf
 	${OBJDUMP} -h -S $< > $@

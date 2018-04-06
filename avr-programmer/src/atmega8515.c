@@ -5,8 +5,14 @@
  *****************************************************************************/
 
 #include "device.h"
+#include "serial.h"
 
 #include <avr/io.h>
+
+void device_init()
+{
+    serial_init(57600);
+}
 
 void addressbus_init()
 {

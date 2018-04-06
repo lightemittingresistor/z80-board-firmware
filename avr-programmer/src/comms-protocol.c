@@ -91,7 +91,7 @@ void protocol_startup()
         "z80-board command interface\n"
         "Started.\n"
         ">";
-    serial_put_P((const unsigned char*)welcomemsg, sizeof(welcomemsg));
+    comms_put_P((const unsigned char*)welcomemsg, sizeof(welcomemsg));
 }
 
 void protocol_init()
@@ -154,9 +154,9 @@ void protocol_process()
         if(!foundHandler)
         {
             static const char errormsg[] PROGMEM = "Unknown command ";
-            serial_put_P((const unsigned char*)errormsg, sizeof(errormsg));
-            serial_put((const unsigned char*)state.command, first_space);
-            serial_putchar('\n');
+            comms_put_P((const unsigned char*)errormsg, sizeof(errormsg));
+            comms_put((const unsigned char*)state.command, first_space);
+            comms_putchar('\n');
         }
     }
 
@@ -164,7 +164,7 @@ void protocol_process()
     state.command[0] = '\0';
     if(state.echo)
     {
-        serial_putchar('>');
+        comms_putchar('>');
     }
 }
 
@@ -172,7 +172,7 @@ void protocol_state_idle(unsigned char byte)
 {
     if(state.echo)
     {
-        serial_putchar(byte);
+        comms_putchar(byte);
     }
 
     switch(byte)
@@ -194,7 +194,7 @@ void protocol_state_idle(unsigned char byte)
             else
             {
                 static const char buffer_errormsg[] PROGMEM= "\nCommand Buffer Overflow\n";
-                serial_put_P((unsigned char*)buffer_errormsg, sizeof(buffer_errormsg));
+                comms_put_P((unsigned char*)buffer_errormsg, sizeof(buffer_errormsg));
                 protocol_process();
             }
         }
@@ -216,7 +216,7 @@ void protocol_handle(unsigned char byte)
             {
                 static const char noerrormsg[] PROGMEM = 
                     "Got correct line";
-                serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
+                comms_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
                 
                 memory_writemultiple(hex_ctx.address, hex_ctx.data, hex_ctx.byte_count);
             }
@@ -224,7 +224,7 @@ void protocol_handle(unsigned char byte)
             {
                 static const char errormsg[] PROGMEM = 
                     "Invalid hex checksum";
-                serial_put_P((unsigned const char*)errormsg, sizeof(errormsg));
+                comms_put_P((unsigned const char*)errormsg, sizeof(errormsg));
                 state.current_state = state_idle;
                 memory_releasebus();
             }
@@ -233,7 +233,7 @@ void protocol_handle(unsigned char byte)
         {
             static const char noerrormsg[] PROGMEM = 
                     "Got end of file";
-                serial_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
+                comms_put_P((unsigned const char*)noerrormsg, sizeof(noerrormsg));
             state.current_state = state_idle;
             memory_releasebus();
         }
@@ -247,19 +247,19 @@ void command_help(const char* buffer, int paramcount)
         "--------------------------------\n"
         "  command  |  description\n"
         "--------------------------------\n";
-    serial_put_P((const unsigned char*)header, sizeof(header));
+    comms_put_P((const unsigned char*)header, sizeof(header));
     for(const struct command_entry* current = commands; pgm_read_ptr(&current->name); ++current)
     {
-        serial_put((const unsigned char*)"  ", 2);
-        serial_put_P((const unsigned char*)pgm_read_ptr(&current->name), pgm_read_word(&current->length));
+        comms_put((const unsigned char*)"  ", 2);
+        comms_put_P((const unsigned char*)pgm_read_ptr(&current->name), pgm_read_word(&current->length));
         // pad out to divider
         for(int i=pgm_read_word(&current->length); i < 9; ++i)
         {
-            serial_putchar(' ');
+            comms_putchar(' ');
         }
-        serial_put((const unsigned char*)"| ", 2);
-        serial_put_P((const unsigned char*)pgm_read_ptr(&current->helpstring), strlen_P(pgm_read_ptr(&current->helpstring)));
-        serial_putchar('\n');
+        comms_put((const unsigned char*)"| ", 2);
+        comms_put_P((const unsigned char*)pgm_read_ptr(&current->helpstring), strlen_P(pgm_read_ptr(&current->helpstring)));
+        comms_putchar('\n');
     }
 }
 
@@ -267,12 +267,12 @@ void command_serialnumber(const char* buffer, int paramcount)
 {
     static const char header[] PROGMEM = 
         "Kit Serial Number: ";
-    serial_put_P((const unsigned char*)header, sizeof(header));
+    comms_put_P((const unsigned char*)header, sizeof(header));
 
     char pbuffer[32];
     uinttohexstring(eeprom_read_dword(0), pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, strlen(pbuffer));
-    serial_putchar('\n');
+    comms_put((unsigned char*)pbuffer, strlen(pbuffer));
+    comms_putchar('\n');
 }
 
 void command_reset(const char* buffer, int paramcount)
@@ -288,12 +288,12 @@ void command_peek(const char* buffer, int paramcount)
     {
         static const char error[] PROGMEM = 
             "usage: 0xDD or 0xdd\n";
-        serial_put_P((const unsigned char*)error, sizeof(error));
+        comms_put_P((const unsigned char*)error, sizeof(error));
         return;
     }
     static const char message1[] PROGMEM = 
         "Taking control of bus...\n";
-    serial_put_P((const unsigned char*)message1, sizeof(message1));
+    comms_put_P((const unsigned char*)message1, sizeof(message1));
     memory_takebus();
 
     unsigned int address = 0;
@@ -322,17 +322,17 @@ void command_peek(const char* buffer, int paramcount)
 
     static const char reading_msg[] PROGMEM = 
         "Reading 0x";
-    serial_put_P((unsigned char*)reading_msg, sizeof(reading_msg));
+    comms_put_P((unsigned char*)reading_msg, sizeof(reading_msg));
     uinttohexstring(address, pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, 32);
-    serial_put_P((unsigned char*)three_dots, sizeof(three_dots));
+    comms_put((unsigned char*)pbuffer, 32);
+    comms_put_P((unsigned char*)three_dots, sizeof(three_dots));
 
     unsigned char result = memory_read(address);
 
-    serial_put_P((unsigned char*)result_msg, sizeof(result_msg));
+    comms_put_P((unsigned char*)result_msg, sizeof(result_msg));
     uinttohexstring(result, pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, 32);
-    serial_putchar('\n');
+    comms_put((unsigned char*)pbuffer, 32);
+    comms_putchar('\n');
 
     memory_releasebus();
 }
@@ -343,12 +343,12 @@ void command_poke(const char* buffer, int paramcount)
     {
         static const char error[] PROGMEM = 
             "usage: 0xDD or 0xdd\n";
-        serial_put_P((const unsigned char*)error, sizeof(error));
+        comms_put_P((const unsigned char*)error, sizeof(error));
         return;
     }
     static const char message1[] PROGMEM = 
         "Taking control of bus...\n";
-    serial_put_P((const unsigned char*)message1, sizeof(message1));
+    comms_put_P((const unsigned char*)message1, sizeof(message1));
     memory_takebus();
 
     unsigned int address = 0;
@@ -407,25 +407,25 @@ void command_poke(const char* buffer, int paramcount)
 
     static const char writing_msg[] PROGMEM = 
         "writing 0x";
-    serial_put_P((unsigned char*)writing_msg, sizeof(writing_msg));
+    comms_put_P((unsigned char*)writing_msg, sizeof(writing_msg));
     uinttohexstring(address, pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, 32);
+    comms_put((unsigned char*)pbuffer, 32);
 
     static const char to_msg[] PROGMEM = " -> 0x";
-    serial_put_P((unsigned char*)to_msg, sizeof(to_msg));
+    comms_put_P((unsigned char*)to_msg, sizeof(to_msg));
     uinttohexstring(data, pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, 32);
+    comms_put((unsigned char*)pbuffer, 32);
 
-    serial_put_P((unsigned char*)three_dots, sizeof(three_dots));
+    comms_put_P((unsigned char*)three_dots, sizeof(three_dots));
 
     memory_write(address, data);
 
     unsigned char result = memory_read(address);
 
-    serial_put_P((unsigned char*)result_msg, sizeof(result_msg));
+    comms_put_P((unsigned char*)result_msg, sizeof(result_msg));
     uinttohexstring(result, pbuffer, 32);
-    serial_put((unsigned char*)pbuffer, 32);
-    serial_putchar('\n');
+    comms_put((unsigned char*)pbuffer, 32);
+    comms_putchar('\n');
 
     memory_releasebus();
 }
@@ -435,9 +435,9 @@ void command_sendhex(const char* buffer, int paramcount)
     state.current_state = state_hex;
     static const char taking_msg[] PROGMEM = 
         "Taking control of bus... ";
-    serial_put_P((unsigned char*)taking_msg, sizeof(taking_msg));
+    comms_put_P((unsigned char*)taking_msg, sizeof(taking_msg));
     memory_takebus();
     static const char taken_msg[] PROGMEM = 
         "Taken control of bus... ";
-    serial_put_P((unsigned char*)taken_msg, sizeof(taken_msg));
+    comms_put_P((unsigned char*)taken_msg, sizeof(taken_msg));
 }

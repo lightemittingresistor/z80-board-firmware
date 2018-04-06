@@ -11,6 +11,8 @@
 
 #include <avr/io.h>
 
+void device_init();
+
 // Initialise the busses to their default state
 // Assumes interrupts disabled
 void addressbus_init();

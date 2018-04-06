@@ -4,23 +4,33 @@
  *
  *****************************************************************************/
 
-#include "serial.h"
+#include "device.h"
 #include "memorybus.h"
 #include "comms-protocol.h"
+
+#ifdef ENABLE_VUSB
+#include <usbdrv.h>
+#else 
+#include "serial.h"
+#endif
 
 #include <avr/interrupt.h>
 
 int main()
 {
+    device_init();
     memory_init();
-    serial_init(57600);
     protocol_init();
 
     sei();
 
     while(1)
     {
+#ifdef ENABLE_VUSB
+        usbPoll();
+#else
         protocol_handle(serial_getchar());
+#endif
     }
 
     return 0;

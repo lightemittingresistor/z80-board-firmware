@@ -5,8 +5,25 @@
  *****************************************************************************/
 
 #include "device.h"
+#include "serial.h"
+
+#ifdef ENABLE_VUSB
+#include <usbdrv.h>
+#include <oddebug.h>
+#endif
 
 #include <avr/io.h>
+
+void device_init()
+{
+#ifdef ENABLE_VUSB
+    odDebugInit();
+    DBG1(0x00, 0, 0);
+    usbInit();
+#else
+    serial_init(57600);
+#endif
+}
 
 void addressbus_init()
 {
