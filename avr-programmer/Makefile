@@ -65,7 +65,7 @@ SOURCES += \
 endif
 
 # three stages to replace different parts of the filename
-OBJECTS_TEMP = $(SOURCES:%=build/%)
+OBJECTS_TEMP = $(SOURCES:%=build/${TARGET}/%)
 OBJECTS_C = $(OBJECTS_TEMP:.c=.o)
 OBJECTS = $(OBJECTS_C:.S=.o)
 
@@ -73,11 +73,11 @@ all: build/${PROJECT}-${TARGET}.lst build/${PROJECT}-${TARGET}.hex
 
 include tests.mk
 
-build/%.o : %.c
+build/${TARGET}/%.o : %.c
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
-build/%.o : %.S
+build/${TARGET}/%.o : %.S
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
@@ -98,3 +98,9 @@ flash : build/${PROJECT}-${TARGET}.hex
 clean:
 	rm -rf build/*
 	rm -rf build-tests/*
+
+all-targets:
+	${MAKE} clean
+	${MAKE} TARGET=atmega8515
+	${MAKE} TARGET=atmega328p
+
