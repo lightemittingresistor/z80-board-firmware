@@ -16,8 +16,8 @@
 #define MCP23017_PIN(PIN) (1 << ((PIN)-1))
 
 // takes pin argument for consistency and in case this somehow were to be swapped
-#define MCP23017_INPUT(PIN) 0
-#define MCP23017_OUTPUT(PIN) (1 << ((PIN)-1))
+#define MCP23017_INPUT(PIN) (1 << ((PIN)-1))
+#define MCP23017_OUTPUT(PIN) 0
 
 // Takes the three bit digit assigned via pins
 #define MCP23017_ADDRESS(ADDR) (0x20 | ((ADDR) & 0x07)) 
