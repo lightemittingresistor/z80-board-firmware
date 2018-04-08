@@ -29,6 +29,8 @@ endif
 
 PROJECT=z80-board-firmware
 
+OUTPUT_SUFFIX=
+
 SOURCES = \
 	src/main.c \
 	src/memorybus.c \
@@ -45,6 +47,11 @@ OBJCOPY=avr-objcopy
 # -O3 is great but inlines some chunky functions with LTO therefore making the code huge!
 CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O2 -I$(CURDIR)/include -Wall -Werror \
 		-Wl,--gc-sections -flto -I$(CURDIR)/include/$(TARGET)
+
+ifeq ("$(ENABLE_DEBUG)","1")
+	CFLAGS += "-DENABLE_DEBUG "
+	OUTPUT_SUFFIX="-debug"
+endif
 
 ifeq ($(ENABLE_USB), 1)
 SOURCES += \
@@ -65,19 +72,19 @@ SOURCES += \
 endif
 
 # three stages to replace different parts of the filename
-OBJECTS_TEMP = $(SOURCES:%=build/${TARGET}/%)
+OBJECTS_TEMP = $(SOURCES:%=build/${TARGET}${OUTPUT_SUFFIX}/%)
 OBJECTS_C = $(OBJECTS_TEMP:.c=.o)
 OBJECTS = $(OBJECTS_C:.S=.o)
 
-all: build/${PROJECT}-${TARGET}.lst build/${PROJECT}-${TARGET}.hex
+all: build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.lst build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.hex
 
 include tests.mk
 
-build/${TARGET}/%.o : %.c
+build/${TARGET}${OUTPUT_SUFFIX}/%.o : %.c
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
-build/${TARGET}/%.o : %.S
+build/${TARGET}${OUTPUT_SUFFIX}/%.o : %.S
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
@@ -88,7 +95,7 @@ build/${TARGET}/%.o : %.S
 	${OBJCOPY} -j .text -j .data -O ihex $< $@
 	${OBJCOPY} -j .eeprom -O ihex $< ${@:%.hex=%-eeprom.hex}
 
-build/${PROJECT}-${TARGET}.elf: ${OBJECTS}
+build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.elf: ${OBJECTS}
 	${CC} ${CFLAGS} -Wl,-Map,$(@:.elf=.map) $^ -o $@
 	avr-size --format=avr --mcu=${TARGET} $@
 
@@ -103,4 +110,6 @@ all-targets:
 	${MAKE} clean
 	${MAKE} TARGET=atmega8515
 	${MAKE} TARGET=atmega328p
+	${MAKE} TARGET=atmega8515 ENABLE_DEBUG=1
+	${MAKE} TARGET=atmega328p ENABLE_DEBUG=1
 
