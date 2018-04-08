@@ -65,12 +65,17 @@ static bool i2c_senddata(uint8_t data)
     return ((TWSR & 0xF8) == 0x28);
 }
 
-static bool i2c_recvdata(uint8_t* data)
+static bool i2c_recvdata(uint8_t* data, bool last)
 {
     EXTREME_DEBUG_LOG_STRING("Receiving Data");
-    TWCR = (1<<TWINT) | (1 << TWEA) | (1<<TWEN);
+    if(last)
+    {
+        EXTREME_DEBUG_LOG_STRING("This is the last expected byte");
+    }
+    TWCR = (1<<TWINT) | (last ? 0 : (1 << TWEA)) | (1<<TWEN);
     while (!(TWCR & (1<<TWINT)));
-    if((TWSR & 0xF8) == 0x50)
+    if((!last && (TWSR & 0xF8) == 0x50) ||
+        (last && (TWSR & 0xF8) == 0x58))
     {
         *data = TWDR;
         EXTREME_DEBUG_LOG_STRING("Received Data");
@@ -86,7 +91,8 @@ static int i2c_readinternal(uint8_t* buffer, uint8_t length)
 
     while(length)
     {
-        if(!i2c_recvdata(buffer))
+        DEBUG_LOG_VAL("Receiving remaining", length);
+        if(!i2c_recvdata(buffer, length == 1))
         {
             DEBUG_LOG_VAL("Error receiving", (TWSR & 0xF8));
             i2c_stop();
@@ -172,7 +178,12 @@ int i2c_writeread(uint8_t address, uint8_t data, uint8_t* buffer, uint8_t length
 
 uint8_t i2c_readbyte(uint8_t address)
 {
-    if(!i2c_start()) { return 0; }
+    if(!i2c_start())
+    {
+        DEBUG_LOG_VAL("Error starting", (TWSR & 0xF8));
+        return 0;
+    }
+
     if(!i2c_address(address, true))
     {
         DEBUG_LOG_VAL("Error addressing", (TWSR & 0xF8));
@@ -182,7 +193,7 @@ uint8_t i2c_readbyte(uint8_t address)
     uint8_t b;
     i2c_readinternal(&b, 1);
     return b;
-    if(i2c_recvdata(&b))
+    if(i2c_recvdata(&b, true))
     {
         DEBUG_LOG_VAL("Error reading", (TWSR & 0xF8));
         i2c_stop();
