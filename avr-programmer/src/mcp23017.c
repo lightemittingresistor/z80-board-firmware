@@ -110,9 +110,7 @@ uint8_t mcp23017_read_latch(uint8_t address, int port)
         reg = OLATB;
     }
     uint8_t data;
-    //i2c_writeread(address, reg, &data, 1);
-    i2c_write(address, &reg, 1);
-    data = i2c_readbyte(address);
+    i2c_writeread(address, reg, &data, 1);
     return data;
 }
 
