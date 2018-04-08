@@ -5,11 +5,13 @@
  *****************************************************************************/
 
 #include "device.h"
-#include "serial.h"
+#include "i2c.h"
 
 #ifdef ENABLE_VUSB
 #include <usbdrv.h>
 #include <oddebug.h>
+#else
+#include "serial.h"
 #endif
 
 #include <avr/io.h>
@@ -23,6 +25,8 @@ void device_init()
 #else
     serial_init(57600);
 #endif
+
+    i2c_init();
 }
 
 void addressbus_init()

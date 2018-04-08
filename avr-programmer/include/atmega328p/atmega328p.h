@@ -19,6 +19,10 @@
 #define WR 3
 #define MREQ 2
 
+#define I2C_PORT PORTC
+#define I2C_PIN_SDA 4
+#define I2C_PIN_SCL 5
+
 static inline long addressbus_read()
 {
     return 0;//(PINC << 8) | PINA;

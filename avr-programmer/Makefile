@@ -58,6 +58,11 @@ SOURCES += \
 	src/serial.c
 endif
 
+ifeq ("$(TARGET)","atmega328p")
+SOURCES += \
+	src/i2c.c
+endif
+
 # three stages to replace different parts of the filename
 OBJECTS_TEMP = $(SOURCES:%=build/%)
 OBJECTS_C = $(OBJECTS_TEMP:.c=.o)
