@@ -60,7 +60,8 @@ endif
 
 ifeq ("$(TARGET)","atmega328p")
 SOURCES += \
-	src/i2c.c
+	src/i2c.c \
+	src/mcp23017.c
 endif
 
 # three stages to replace different parts of the filename
