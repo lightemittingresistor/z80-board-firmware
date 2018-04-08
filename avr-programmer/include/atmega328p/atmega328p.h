@@ -11,6 +11,8 @@
 #error Include device.h not this file directly
 #endif
 
+#include "mcp23017.h"
+
 // Port D control lines
 #define BUSACK 7
 #define BUSREQ 6
@@ -19,13 +21,16 @@
 #define WR 3
 #define MREQ 2
 
+static uint8_t addressbus_portexpander = MCP23017_ADDRESS(0);
+
 #define I2C_PORT PORTC
 #define I2C_PIN_SDA 4
 #define I2C_PIN_SCL 5
 
 static inline long addressbus_read()
 {
-    return 0;//(PINC << 8) | PINA;
+    return (mcp23017_read_port(addressbus_portexpander, MCP23017_PORTB) << 8) |
+                mcp23017_read_port(addressbus_portexpander, MCP23017_PORTA);
 }
 
 static inline unsigned char databus_read()
@@ -37,8 +42,8 @@ static inline void addressbus_set(long address)
 {
     if(!busmaster) return;
 
-    //PORTA = address & 0xFF;
-    //PORTC = (address >> 8);
+    mcp23017_write(addressbus_portexpander, MCP23017_PORTA, address & 0xFF);
+    mcp23017_write(addressbus_portexpander, MCP23017_PORTB, (address >> 8));
 }
 
 static inline void databus_set(unsigned char data)

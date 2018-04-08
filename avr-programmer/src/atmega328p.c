@@ -31,11 +31,13 @@ void device_init()
 
 void addressbus_init()
 {
-    // Port A all inputs (no pullup)
-    //DDRA = 0x00; PORTA = 0x00;
+    // Expander port A all inputs (no pullup)
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0xff);
+    mcp23017_set_pullups(addressbus_portexpander, MCP23017_PORTA, 0x00);
 
-    // Port C all inputs (no pullup)
-    //DDRC = 0x00; PORTC = 0x00;
+    // Expander port B all inputs (no pullup)
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTB, 0xff);
+    mcp23017_set_pullups(addressbus_portexpander, MCP23017_PORTB, 0x00);
 }
 
 void databus_init()
@@ -59,7 +61,8 @@ void controllines_init()
 void controllines_becomebusmaster()
 {
     // address bus all outputs
-    //DDRA = 0xff;  DDRC = 0xff;
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0x00);
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTB, 0x00);
 
     // RD,WR,MREQ output (start high)
     //PORTD |= (1 << RD) | (1 << WR) | (1 << MREQ);
