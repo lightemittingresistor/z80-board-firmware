@@ -46,7 +46,7 @@ OBJCOPY=avr-objcopy
 
 # -O3 is great but inlines some chunky functions with LTO therefore making the code huge!
 CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O2 -I$(CURDIR)/include -Wall -Werror \
-		-Wl,--gc-sections -flto -I$(CURDIR)/include/$(TARGET)
+		-Wl,--gc-sections -flto -I$(CURDIR)/include/$(TARGET) -I$(CURDIR)/build
 
 ifeq ("$(ENABLE_DEBUG)","1")
 	CFLAGS += "-DDEBUG_ENABLED "
@@ -80,7 +80,10 @@ all: build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.lst build/${PROJECT}-${TARGET}${
 
 include tests.mk
 
-build/${TARGET}${OUTPUT_SUFFIX}/%.o : %.c
+build/build-config.h : makeconfigfile.sh
+	./makeconfigfile.sh > $@
+
+build/${TARGET}${OUTPUT_SUFFIX}/%.o : %.c build/build-config.h
 	mkdir -p `dirname $@`
 	${CC} -c ${CFLAGS} $< -o $@
 
@@ -108,6 +111,7 @@ clean:
 
 all-targets:
 	${MAKE} clean
+	${MAKE} build/build-config.h
 	${MAKE} TARGET=atmega8515
 	${MAKE} TARGET=atmega328p
 	${MAKE} TARGET=atmega8515 ENABLE_DEBUG=1

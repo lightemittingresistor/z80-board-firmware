@@ -9,6 +9,7 @@
 #include "serial.h"
 #include "stringtools.h"
 #include "hex-receiver.h"
+#include "build-config.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -89,6 +90,8 @@ void protocol_startup()
 {
     static const char welcomemsg[] PROGMEM =
         "z80-board command interface\n"
+        "Version " VERSION "\n"
+        "Built " BUILDDATETIME "\n"
         "Started.\n"
         ">";
     comms_put_P((const unsigned char*)welcomemsg, sizeof(welcomemsg));
