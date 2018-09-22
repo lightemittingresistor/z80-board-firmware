@@ -34,7 +34,9 @@ OUTPUT_SUFFIX=
 SOURCES = \
 	src/main.c \
 	src/memorybus.c \
-	src/comms-protocol.c \
+	src/protocol/protocol_assembler.c \
+	src/protocol/protocol_messagehandler.c \
+	src/protocol/protocol.c \
 	src/stringtools.c \
 	src/hex-receiver.c \
 	src/${TARGET}.c
@@ -62,7 +64,8 @@ SOURCES += \
 CFLAGS += -I$(CURDIR)/vusb-20121206/usbdrv/ -DENABLE_VUSB -DDEBUG_LEVEL=1
 else
 SOURCES += \
-	src/serial.c
+	src/serial.c \
+	src/protocol/protocol_serial.c
 endif
 
 ifeq ("$(TARGET)","atmega328p")

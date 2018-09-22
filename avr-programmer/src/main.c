@@ -6,7 +6,7 @@
 
 #include "device.h"
 #include "memorybus.h"
-#include "comms-protocol.h"
+#include "protocol/protocol.h"
 
 #ifdef ENABLE_VUSB
 #include <usbdrv.h>
@@ -15,9 +15,11 @@
 #endif
 
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 int main()
 {
+    wdt_enable(WDTO_1S);
     device_init();
     memory_init();
     protocol_init();
@@ -26,10 +28,12 @@ int main()
 
     while(1)
     {
+        wdt_reset();
 #ifdef ENABLE_VUSB
         usbPoll();
 #else
-        protocol_handle(serial_getchar());
+        uint8_t b = serial_getchar();
+        protocol_feed_bytes(&b, 1);
 #endif
     }
 

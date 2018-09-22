@@ -112,7 +112,7 @@ void memory_write(long address, unsigned char data)
     if(!busmaster) return;
 
     // if we're in ROM, do write protect dance
-    if(address < 0x8000)
+    if(0)//address < 0x8000)
     {
         memory_writeprotect_dance();
     }

@@ -23,12 +23,12 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
     0xc0                           // END_COLLECTION
 };
 
-uchar   usbFunctionRead(uchar *data, uchar len)
+uchar usbFunctionRead(uchar *data, uchar len)
 {
     return len;
 }
 
-uchar   usbFunctionWrite(uchar *data, uchar len)
+uchar usbFunctionWrite(uchar *data, uchar len)
 {
     return 0;
 }
