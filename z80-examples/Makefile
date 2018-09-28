@@ -1,18 +1,24 @@
 # Makefile for z80 board firmware (z80 code)
 
-ASM=zasm
+ASM=z80asm --cpu=z80
 
-all: build/example.hex build/example.rom
+all: build/example.hex
 
-build/%.s: %.s
-	mkdir -p `dirname $@`
-	cp $< $@
+.PRECIOUS: %.o %.bin build/%.s
 
-%.hex: %.s
-	${ASM} -x -w -u $<
+build/%s: %s.m4
+	mkdir -p build
+	m4 $< > $@
 
-%.rom: %.s
-	${ASM} -b -l0 $<
+%.o: %.s
+	mkdir -p build
+	${ASM} --output=$@ -m $< 
+
+%.hex: %.bin
+	appmake +hex --org 0 -b $< -o $@
+
+%.bin: %.o
+	${ASM} -m -b $< 
 
 clean:
 	rm -rf build
