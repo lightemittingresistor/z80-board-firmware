@@ -1,0 +1,10 @@
+asm/asm_digitalWrite.asm
+asm/digitalwrite.asm
+asm/digitalwrite_callee.asm
+
+asm/asm_setpins.asm
+asm/setpins.asm
+asm/setpins_callee.asm
+
+asm/asm_getpins.asm
+asm/getpins.asm
