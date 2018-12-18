@@ -6,6 +6,7 @@
 
 #include "device.h"
 #include "i2c.h"
+#include "debug.h"
 
 #ifdef ENABLE_VUSB
 #include <usbdrv.h>
@@ -47,15 +48,23 @@ void databus_init()
 
 void controllines_init()
 {
-    // Set BUSREQ high, WriteMode low
+    // Set BUSREQ high
     // (BUSREQ initially to pullup actually which is fine)
-    //PORTD = (1 << BUSREQ);
+    PORTC |= (1 << BUSREQ);
 
-    // Port D 7 input (BUSACK)
-    // Port D 6,5 output (BUSREQ, WriteMode)
-    // Port D 4,3 input (RD,WR)
-    // Port D 2 input (MREQ)
-    //DDRD = (1 << BUSREQ) | (1 << WRITEMODE);
+    // RD,RW,Reset as inputs, no pullups
+    DDRB &= ~((1 << RD) | (1 << WR) | (1 << RESET));
+    PORTB &= ~((1 << RD) | (1 << WR) | (1 << RESET));
+
+    // IOREQ, MREQ, BUSACK as inputs, no pullups
+    DDRC &= ~((1 << IOREQ) | (1 << MREQ) | (1 << BUSACK));
+    PORTC &= ~((1 << IOREQ) | (1 << MREQ) | (1 << BUSACK));
+    
+    //now enable pullups on BUSACK
+    PORTC |= (1 << BUSACK);
+
+    //BUSREQ is an output
+    DDRC &= (1 << BUSREQ);
 }
 
 void controllines_becomebusmaster()
@@ -64,22 +73,34 @@ void controllines_becomebusmaster()
     mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0x00);
     mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTB, 0x00);
 
-    // RD,WR,MREQ output (start high)
-    //PORTD |= (1 << RD) | (1 << WR) | (1 << MREQ);
-    //DDRD |= (1 << RD) | (1 << WR) | (1 << MREQ);
+    // RD, WR output (start high)
+    PORTB |= (1 << RD) | (1 << WR);
+    DDRB  |= (1 << RD) | (1 << WR);
+
+    // MREQ, IOREQ output (start high)
+    PORTC |= (1 << MREQ) | (1 << IOREQ);
+    DDRC  |= (1 << MREQ) | (1 << IOREQ);
 
     databus_idle();
 }
 
 void controllines_dropbusmaster()
 {
-    // Address bus inputs (without pullup)
-    //DDRA = 0x00; DDRC = 0x00;
-    //PORTA = 0x00; PORTC = 0x00;
+    // Expander port A all inputs (no pullup)
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0xff);
+    mcp23017_set_pullups(addressbus_portexpander, MCP23017_PORTA, 0x00);
 
-    // RD,WR,MREQ input (without pullups)
-    //PORTD &= ~((1 << RD) | (1 << WR) | (1 << MREQ));
-    //DDRD &= ~((1 << RD) | (1 << WR) | (1 << MREQ));
+    // Expander port B all inputs (no pullup)
+    mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTB, 0xff);
+    mcp23017_set_pullups(addressbus_portexpander, MCP23017_PORTB, 0x00);
+
+    // RD,RW as inputs, no pullups
+    DDRB &= ~((1 << RD) | (1 << WR));
+    PORTB &= ~((1 << RD) | (1 << WR));
+
+    // IOREQ, MREQ as inputs, no pullups
+    DDRC &= ~((1 << IOREQ) | (1 << MREQ));
+    PORTC &= ~((1 << IOREQ) | (1 << MREQ));
 
     databus_idle();
 }
@@ -121,4 +142,28 @@ void databus_idle()
     //DDRE = 0x00; PORTE = 0x00;
 
     datamaster = false;
+}
+
+void controlllines_reset(bool assert)
+{
+    if(assert)
+    {
+        DEBUG_LOG_STRING("Asserting RESET");
+        // set PB2 as output
+        DDRB |= (1 << 2);
+        // set low
+        PORTB &= ~(1 << 2);
+
+    }
+    else
+    {
+        DEBUG_LOG_STRING("Deasserting RESET");
+        // basically return to inactive state
+        // set PB2 as input
+        DDRB &= ~(1 << 2);
+        // set no pull up
+        PORTB &= ~(1 << 2);
+    }
+
+    DEBUG_LOG_VAL("DDRB", DDRB);
 }

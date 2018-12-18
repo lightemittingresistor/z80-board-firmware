@@ -8,6 +8,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 #include <string.h>
 
@@ -104,7 +105,7 @@ char serial_getchar()
     {
         // enable interrupts so we get some characters
         sei();
-        while(bufferpointer == readbufferpointer);
+        while(bufferpointer == readbufferpointer) wdt_reset();
     }
 
     cli();
@@ -184,5 +185,6 @@ void serial_put_P(const unsigned char* buffer, unsigned int size)
             break;
         }
         serial_putchar(c);
+        wdt_reset();
     }
 }

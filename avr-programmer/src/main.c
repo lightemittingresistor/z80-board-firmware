@@ -16,6 +16,7 @@
 
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
+#include <util/delay.h>
 
 int main()
 {
@@ -25,6 +26,13 @@ int main()
     protocol_init();
 
     sei();
+
+    // if possible, reset the CPU to make sure it's in a known state
+    #ifdef BOARD_SUPPORTS_RESET
+    controlllines_reset(true);
+    _delay_ms(100);
+    controlllines_reset(false);
+    #endif
 
     while(1)
     {

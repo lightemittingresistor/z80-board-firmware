@@ -23,7 +23,6 @@ void controllines_init();
 // unless you are in memorybus.c!
 void controllines_becomebusmaster();
 void controllines_dropbusmaster();
-static inline void controllines_writemode(bool mode);
 static inline void controllines_read(bool read);
 static inline void controllines_write(bool write);
 static inline void controllines_memreq(bool memreq);
@@ -45,6 +44,22 @@ static inline void addressbus_set(long address);
 #include "atmega328p/atmega328p.h"
 #else
 #error unknown target
+#endif
+
+#ifdef BOARD_SUPPORTS_RESET
+void controlllines_reset(bool assert);
+#endif
+
+#ifdef BOARD_SUPPORTS_IOREQ
+// Low level bus routines - not for use directly
+// unless you are in memorybus.c!
+static inline void controllines_ioreq(bool memreq);
+#endif
+
+#ifdef BOARD_SUPPORTS_WRITEMODE
+// Low level bus routines - not for use directly
+// unless you are in memorybus.c!
+static inline void controllines_writemode(bool mode);
 #endif
 
 #endif

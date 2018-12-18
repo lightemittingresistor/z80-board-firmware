@@ -19,6 +19,8 @@
 #define WR 3
 #define MREQ 2
 
+#define BOARD_SUPPORTS_WRITEMODE 1
+
 static inline long addressbus_read()
 {
     return (PINC << 8) | PINA;

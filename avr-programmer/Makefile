@@ -105,7 +105,7 @@ build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.elf: ${OBJECTS}
 	${CC} ${CFLAGS} -Wl,-Map,$(@:.elf=.map) $^ -o $@
 	avr-size --format=avr --mcu=${TARGET} $@ | tee build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.txt
 
-flash : build/${PROJECT}-${TARGET}.hex
+flash : build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.hex
 	avrdude -p ${AVRDUDE_TARGET} -c usbasp -U flash:w:$< -U lfuse:w:0xEF:m -U hfuse:w:0xD1:m
 
 clean:
