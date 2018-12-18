@@ -84,6 +84,7 @@ all: build/${PROJECT}-${TARGET}${OUTPUT_SUFFIX}.lst build/${PROJECT}-${TARGET}${
 include tests.mk
 
 build/build-config.h : makeconfigfile.sh
+	mkdir -p `dirname $@`
 	./makeconfigfile.sh > $@
 
 build/${TARGET}${OUTPUT_SUFFIX}/%.o : %.c build/build-config.h
