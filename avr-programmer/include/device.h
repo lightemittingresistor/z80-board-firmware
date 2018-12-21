@@ -7,9 +7,9 @@
 #ifndef Z80_BOARD_DEVICE_H
 #define Z80_BOARD_DEVICE_H
 
-#include "memorybus.h"
-
 #include <avr/io.h>
+
+#include <stdbool.h>
 
 void device_init();
 

@@ -11,6 +11,12 @@
 #ifdef ENABLE_VUSB
 #include <usbdrv.h>
 #include <oddebug.h>
+
+#ifdef DEBUG_ENABLED
+// init serial as well for debug
+#include "serial.h"
+#endif
+
 #else
 #include "serial.h"
 #endif
@@ -21,8 +27,12 @@ void device_init()
 {
 #ifdef ENABLE_VUSB
     odDebugInit();
-    DBG1(0x00, 0, 0);
     usbInit();
+#ifdef DEBUG_ENABLED
+    // init serial as well for debug
+    serial_init(57600);
+#endif
+
 #else
     serial_init(57600);
 #endif
@@ -43,6 +53,12 @@ void addressbus_init()
 
 void databus_init()
 {
+    // no inversions
+    mcp23008_invert_pins(databus_portexpander, 0);
+    // sequential operation disabled, slew rate control enabled
+    mcp23008_set_config(databus_portexpander, MCP23008_CONFIG_SEQOP | MCP23008_CONFIG_DISSLW);
+
+    // configre as idle to start
     databus_idle();
 }
 
@@ -64,11 +80,12 @@ void controllines_init()
     PORTC |= (1 << BUSACK);
 
     //BUSREQ is an output
-    DDRC &= (1 << BUSREQ);
+    DDRC |= (1 << BUSREQ);
 }
 
 void controllines_becomebusmaster()
 {
+    DEBUG_LOG_STRING("Taking control of busses");
     // address bus all outputs
     mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0x00);
     mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTB, 0x00);
@@ -86,6 +103,8 @@ void controllines_becomebusmaster()
 
 void controllines_dropbusmaster()
 {
+    DEBUG_LOG_STRING("Dropping control of busses");
+
     // Expander port A all inputs (no pullup)
     mcp23017_set_direction(addressbus_portexpander, MCP23017_PORTA, 0xff);
     mcp23017_set_pullups(addressbus_portexpander, MCP23017_PORTA, 0x00);
@@ -107,39 +126,30 @@ void controllines_dropbusmaster()
 
 void databus_output()
 {
-    //if(!busmaster) return;
+    if(!busmaster) return;
 
-    //high bits - start with zero
-    //PORTE &= 0xf8;
-    //DDRE |= 0x07;
-
-    // low bits
-    //PORTB &= 0x1f;
-    //DDRB = 0x1f;
+    // all pins output
+    mcp23008_set_direction(databus_portexpander, 0x00);
 
     datamaster = true;
 }
 
 void databus_input()
 {
-    //if(!busmaster) return;
+    if(!busmaster) return;
 
-    // Port B 4:0 all inputs (with pullup)
-    //DDRB = 0x00; PORTB = 0x1F;
-
-    // Port E 2:0 all inputs (with pullup)
-    //DDRE = 0x00; PORTE = 0x07;
+    // all pins input (with pullup)
+    mcp23008_set_pullups(databus_portexpander, 0xff);
+    mcp23008_set_direction(databus_portexpander, 0xff);
 
     datamaster = false;
 }
 
 void databus_idle()
 {
-    // Port B 4:0 all inputs (no pullup)
-    //DDRB = 0x00; PORTB = 0x00;
-
-    // Port E 2:0 all inputs (no pullup)
-    //DDRE = 0x00; PORTE = 0x00;
+    // input (no pullup) effectively tristates the lines
+    mcp23008_set_pullups(databus_portexpander, 0x00);
+    mcp23008_set_direction(databus_portexpander, 0xff);
 
     datamaster = false;
 }

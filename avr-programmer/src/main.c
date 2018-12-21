@@ -7,6 +7,7 @@
 #include "device.h"
 #include "memorybus.h"
 #include "protocol/protocol.h"
+#include "debug.h"
 
 #ifdef ENABLE_VUSB
 #include <usbdrv.h>

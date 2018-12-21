@@ -7,6 +7,7 @@
 #include "i2c.h"
 #include "device.h"
 #include "debug.h"
+#include <avr/interrupt.h>
 
 void i2c_init()
 {
@@ -67,6 +68,12 @@ static bool i2c_senddata(uint8_t data)
 
 static bool i2c_recvdata(uint8_t* data, bool last)
 {
+    // Disable interupts, since they seem to corrupt the register access
+    // (or maybe it just fixes this code by timing but...)
+    // This works around TWSR reading as 0 sometimes
+    unsigned char stored_sreg = SREG;
+    cli();
+
     EXTREME_DEBUG_LOG_STRING("Receiving Data");
     if(last)
     {
@@ -79,9 +86,11 @@ static bool i2c_recvdata(uint8_t* data, bool last)
     {
         *data = TWDR;
         EXTREME_DEBUG_LOG_STRING("Received Data");
+        SREG = stored_sreg;
         return true;
     }
     EXTREME_DEBUG_LOG_STRING("Did not receive Data");
+    SREG = stored_sreg;
     return false;
 }
 

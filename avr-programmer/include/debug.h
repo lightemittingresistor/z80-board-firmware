@@ -9,7 +9,7 @@
 
 #ifdef DEBUG_ENABLED
 #include "stringtools.h"
-#include "comms-protocol.h"
+#include "serial.h"
 #include <avr/pgmspace.h>
 
 #define STRINGIFY_X(X) #X
@@ -19,27 +19,27 @@
     {\
         static const char dbg_msg_static[] PROGMEM = \
             __FILE__ ":"  STRINGIFY(__LINE__)  " " MESSAGE "\n"; \
-        comms_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
+        serial_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
     } while(0)
 
 #define DEBUG_LOG_INT(VAL)  \
     {\
         static const char dbg_msg_static[] PROGMEM =  __FILE__  ":" STRINGIFY(__LINE__) " "; \
-        comms_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
+        serial_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
         char dbg_msg_buffer[16]; \
         uinttohexstring((VAL), dbg_msg_buffer, 16); \
-        comms_put((unsigned char*)dbg_msg_buffer, 16); \
-        comms_putchar('\n'); \
+        serial_put((unsigned char*)dbg_msg_buffer, 16); \
+        serial_putchar('\n'); \
     } while(0)
 
 #define DEBUG_LOG_VAL(NAME, VAL)  \
     {\
         static const char dbg_msg_static[] PROGMEM =  __FILE__ ":" STRINGIFY(__LINE__) " " NAME ": "; \
-        comms_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
+        serial_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
         char dbg_msg_buffer[16]; \
         uinttohexstring((VAL), dbg_msg_buffer, 16); \
-        comms_put((unsigned char*)dbg_msg_buffer, 16); \
-        comms_putchar('\n'); \
+        serial_put((unsigned char*)dbg_msg_buffer, 16); \
+        serial_putchar('\n'); \
     } while(0)
 
 #else

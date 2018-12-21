@@ -52,7 +52,7 @@ CFLAGS=-mmcu=${TARGET} -DF_CPU=${FREQUENCY}UL -g -O2 -I$(CURDIR)/include -Wall -
 
 ifeq ("$(ENABLE_DEBUG)","1")
 	CFLAGS += "-DDEBUG_ENABLED "
-	OUTPUT_SUFFIX="-debug"
+	OUTPUT_SUFFIX=-debug
 endif
 
 ifeq ($(ENABLE_USB), 1)
@@ -61,7 +61,16 @@ SOURCES += \
 	vusb-20121206/usbdrv/usbdrv.c \
 	vusb-20121206/usbdrv/usbdrvasm.S \
 	vusb-20121206/usbdrv/oddebug.c
-CFLAGS += -I$(CURDIR)/vusb-20121206/usbdrv/ -DENABLE_VUSB -DDEBUG_LEVEL=1
+CFLAGS += -I$(CURDIR)/vusb-20121206/usbdrv/ -DENABLE_VUSB -DDEBUG_LEVEL=0
+
+# if debug, add serial as well
+ifeq ("$(ENABLE_DEBUG)","1")
+	CFLAGS += "-DDEBUG_ENABLED "
+	OUTPUT_SUFFIX=-debug
+	SOURCES += \
+		src/serial.c
+endif
+
 else
 SOURCES += \
 	src/serial.c \
@@ -71,7 +80,8 @@ endif
 ifeq ("$(TARGET)","atmega328p")
 SOURCES += \
 	src/i2c.c \
-	src/mcp23017.c
+	src/mcp23017.c \
+	src/mcp23008.c
 endif
 
 # three stages to replace different parts of the filename

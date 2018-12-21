@@ -10,6 +10,8 @@
 #error VUSB Disabled!
 #endif
 
+#include "debug.h"
+
 PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
     0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
     0x09, 0x01,                    // USAGE (Vendor Usage 1)
@@ -25,16 +27,22 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 
 uchar usbFunctionRead(uchar *data, uchar len)
 {
+    DEBUG_LOG_STRING("usbFunctionRead");
     return len;
 }
 
 uchar usbFunctionWrite(uchar *data, uchar len)
 {
+    DEBUG_LOG_STRING("usbFunctionWrite");
     return 0;
 }
 
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
+    usbRequest_t    *rq = (void *)data;
+    DEBUG_LOG_STRING("usbFunctionSetup");
+    DEBUG_LOG_VAL("Request Type: ", rq->bmRequestType);
+    DEBUG_LOG_VAL("Request: ", rq->bRequest);
     return 0;
 }
 
