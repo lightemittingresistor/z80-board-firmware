@@ -17,7 +17,7 @@ else
 ifeq ("$(TARGET)","atmega328p")
 
 AVRDUDE_TARGET=m328p
-ENABLE_USB=0
+ENABLE_USB=1
 ifeq ($(FREQUENCY),)
 FREQUENCY=16000000
 endif
