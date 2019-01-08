@@ -11,18 +11,13 @@
 #error VUSB Disabled!
 #endif
 
-// send a single character
-void usb_putchar(unsigned char c);
+// USB Request Numbers
+const uint8_t USB_REQ_GET_STATUS = 1;
+const uint8_t USB_REQ_TAKE_CONTROL = 2;
+const uint8_t USB_REQ_POINTER = 3;
+const uint8_t USB_REQ_TRANSFER_DATA = 4;
+const uint8_t USB_REQ_RESET = 5;
 
-// takes a buffer and buffer size.
-// Returns the actual amount of data received.
-// Does not block if no data is available.
-unsigned int usb_get(unsigned char* buffer, unsigned int size);
 
-// send the contents of a buffer
-void usb_put(const unsigned char* buffer, unsigned int size);
-
-// like usb_put but where buffer is in flash space
-void usb_put_P(const unsigned char* buffer, unsigned int size);
 
 #endif

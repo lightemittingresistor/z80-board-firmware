@@ -19,6 +19,8 @@
 #include <avr/wdt.h>
 #include <util/delay.h>
 
+#include <string.h>
+
 int main()
 {
     wdt_enable(WDTO_1S);
@@ -34,6 +36,19 @@ int main()
     _delay_ms(100);
     controlllines_reset(false);
     #endif
+
+    // test code to zero out memory
+    /*static const int step = 128;
+    static const int value = 0;
+    unsigned char buffer[step];
+    memset(buffer, value, step);
+    memory_takebus();
+    for(uint16_t i = 0; i < 8192; i += step)
+    {
+        memory_writemultiple(i, buffer, step);
+    }
+    DEBUG_LOG_STRING("Done zeroing");
+    memory_releasebus();*/
 
     while(1)
     {

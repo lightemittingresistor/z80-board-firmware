@@ -30,45 +30,59 @@ void memory_takebus()
     // store interrupt state
     unsigned char stored_sreg = SREG;
     cli();
-
     if(busmaster) return;
+    SREG = stored_sreg;
 
     // busreq - active low
     controllines_busreq(false);
 
     // wait for busack to go low
-    while(controllines_busack()) wdt_reset();
+    // this could take a while so re-enable interrupts
+    
+    while(controllines_busack())
+    {
+        wdt_reset();
+    }
 
     controllines_becomebusmaster();
 
+    stored_sreg = SREG;
+    cli();
     busmaster = true;
+    SREG = stored_sreg;
 
     //active high signals
     controllines_read(true);
     controllines_write(true);
     controllines_memreq(true);
 
-    SREG = stored_sreg;
     DEBUG_LOG_STRING("Taken memory bus");
 }
 
 void memory_releasebus()
 {
     DEBUG_LOG_STRING("Releasing memory bus");
+
     // store interrupt state
     unsigned char stored_sreg = SREG;
     cli();
-
-    if(!busmaster) return;
+    if(!busmaster) 
+    {
+        SREG = stored_sreg;
+        return;
+    }
+    SREG = stored_sreg;
 
     controllines_dropbusmaster();
 
     // deassert busreq - active low
     controllines_busreq(true);
 
+    stored_sreg = SREG;
+    cli();
     busmaster = false;
-
     SREG = stored_sreg;
+
     DEBUG_LOG_STRING("Released memory bus");
 }
 
@@ -147,9 +161,12 @@ void memory_write_internal(long address, unsigned char data, bool io)
 
 void memory_writeprotect_dance()
 {
+    /*DEBUG_LOG_STRING("Entering memory_writeprotect_dance");
     memory_write_internal(0x1555, 0xaa, false);
     memory_write_internal(0x0aaa, 0x55, false);
     memory_write_internal(0x1555, 0xa0, false);
+    _delay_ms(10);
+    DEBUG_LOG_STRING("Leaving memory_writeprotect_dance");*/
 }
 
 void memory_write(long address, unsigned char data)
@@ -165,12 +182,17 @@ void memory_write(long address, unsigned char data)
     memory_write_internal(address, data, false);
 
     // wait for write to happen
-    while(memory_read(address) != data);
+    while(memory_read(address) != data) wdt_reset();
 }
 
 void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsigned long length)
 {
-    if(!busmaster) return;
+    DEBUG_LOG_STRING("Entering memory_writemultiple");
+    if(!busmaster) 
+    {
+        DEBUG_LOG_STRING("Leaving memory_writemultiple");
+        return;
+    }
 
     databus_output();
     controllines_memreq(false);
@@ -179,6 +201,7 @@ void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsig
 
     while(counter < length)
     {
+        wdt_reset();
         unsigned long sectionStartAddress = startAddress + counter;
         unsigned long currentAddress = sectionStartAddress;
 
@@ -187,23 +210,40 @@ void memory_writemultiple(unsigned long startAddress, unsigned char* data, unsig
         {
             memory_writeprotect_dance();
             databus_output();
+            controllines_memreq(false);
         }
 
         while((sectionStartAddress & 0xff00) == (currentAddress & 0xff00) 
                 && counter < length)
         {
+            wdt_reset();
             addressbus_set(currentAddress++);
             databus_set(data[counter++]);
             controllines_write(false);
             _delay_us(1);
             controllines_write(true);
+            _delay_us(1);
         }
 
         // wait for write to happen
-        while(memory_read(currentAddress-1) != data[counter-1]);
+        DEBUG_LOG_STRING("Waiting for write to complete");
+        int i = 1024;
+        while(memory_read(currentAddress-1) != data[counter-1])
+        {
+            if(i-- == 0)
+            {
+                i = 1024;
+                DEBUG_LOG_VAL("Testing ", currentAddress-1);
+                DEBUG_LOG_VAL("Expected: ", data[counter-1]);
+                DEBUG_LOG_VAL("Got: ", memory_read(currentAddress-1));
+            }
+            wdt_reset();
+        }
+        DEBUG_LOG_STRING("Done waiting for write to complete");
     }
 
     databus_idle();
+    DEBUG_LOG_STRING("Leaving memory_writemultiple");
 }
 
 #ifdef BOARD_SUPPORTS_IOREQ

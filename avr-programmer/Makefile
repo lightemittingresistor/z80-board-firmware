@@ -2,7 +2,7 @@
 
 # Currently targetting an ATmega8515 clocked at 8MHz
 ifeq ($(TARGET),)
-TARGET=atmega8515
+TARGET=atmega328p
 endif
 
 ifeq ("$(TARGET)","atmega8515")

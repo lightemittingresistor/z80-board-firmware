@@ -15,8 +15,8 @@ void i2c_init()
     I2C_PORT |= (1 << I2C_PIN_SDA) | (1 << I2C_PIN_SCL);
 
     // set bitrate scaler
-    TWBR = 2;
-    TWSR = 2; // prescaler 4
+    TWBR = 3;
+    TWSR = 1; // prescaler 4
 
     // enable TWI
     TWCR = (1 << TWEN);
@@ -37,7 +37,7 @@ static bool i2c_start()
 static void i2c_stop()
 {
     EXTREME_DEBUG_LOG_STRING("Sending Stop");
-    DEBUG_LOG_VAL("Status Register", (TWSR & 0xF8));
+    //DEBUG_LOG_VAL("Status Register", (TWSR & 0xF8));
     TWCR = (1<<TWINT)| (1<<TWEN) | (1<<TWSTO);
     while(TWCR & (1 << TWSTO));
     EXTREME_DEBUG_LOG_STRING("Sent Stop");
@@ -68,12 +68,6 @@ static bool i2c_senddata(uint8_t data)
 
 static bool i2c_recvdata(uint8_t* data, bool last)
 {
-    // Disable interupts, since they seem to corrupt the register access
-    // (or maybe it just fixes this code by timing but...)
-    // This works around TWSR reading as 0 sometimes
-    unsigned char stored_sreg = SREG;
-    cli();
-
     EXTREME_DEBUG_LOG_STRING("Receiving Data");
     if(last)
     {
@@ -81,6 +75,13 @@ static bool i2c_recvdata(uint8_t* data, bool last)
     }
     TWCR = (1<<TWINT) | (last ? 0 : (1 << TWEA)) | (1<<TWEN);
     while (!(TWCR & (1<<TWINT)));
+
+    // Disable interupts, since they seem to corrupt the register access
+    // (or maybe it just fixes this code by timing but...)
+    // This works around TWSR reading as 0 sometimes
+    unsigned char stored_sreg = SREG;
+    cli();
+
     if((!last && (TWSR & 0xF8) == 0x50) ||
         (last && (TWSR & 0xF8) == 0x58))
     {
@@ -89,7 +90,7 @@ static bool i2c_recvdata(uint8_t* data, bool last)
         SREG = stored_sreg;
         return true;
     }
-    EXTREME_DEBUG_LOG_STRING("Did not receive Data");
+    DEBUG_LOG_STRING("Did not receive Data");
     SREG = stored_sreg;
     return false;
 }
@@ -100,7 +101,7 @@ static int i2c_readinternal(uint8_t* buffer, uint8_t length)
 
     while(length)
     {
-        DEBUG_LOG_VAL("Receiving remaining", length);
+        //DEBUG_LOG_VAL("Receiving remaining", length);
         if(!i2c_recvdata(buffer, length == 1))
         {
             DEBUG_LOG_VAL("Error receiving", (TWSR & 0xF8));

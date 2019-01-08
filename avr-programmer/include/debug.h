@@ -34,7 +34,7 @@
 
 #define DEBUG_LOG_VAL(NAME, VAL)  \
     {\
-        static const char dbg_msg_static[] PROGMEM =  __FILE__ ":" STRINGIFY(__LINE__) " " NAME ": "; \
+        static const char dbg_msg_static[] PROGMEM =  __FILE__ ":" STRINGIFY(__LINE__) " " NAME ": 0x"; \
         serial_put_P((unsigned char*)dbg_msg_static, sizeof(dbg_msg_static));\
         char dbg_msg_buffer[16]; \
         uinttohexstring((VAL), dbg_msg_buffer, 16); \
