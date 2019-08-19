@@ -13,6 +13,7 @@
 #include "debug.h"
 #include "usb.h"
 #include "memorybus.h"
+#include "jtag.h"
 
 #include <string.h>
 #include <util/delay.h>
@@ -131,9 +132,25 @@ usbMsgLen_t handleResetRequest(usbRequest_t* rq)
     return 0;
 }
 
+usbMsgLen_t handleJtagRequest(usbRequest_t* rq)
+{
+    if(rq->wValue.bytes[0] == 1)
+    {
+        controlllines_reset(true);
+        jtag_init();
+    }
+    else
+    {
+        disable_jtag();
+        controlllines_reset(false);
+    }
+
+    return 0;
+}
+
 uchar usbFunctionRead(uchar *data, uchar len)
 {
-    DEBUG_LOG_VAL("usbFunctionRead: ", len);
+    //DEBUG_LOG_VAL("usbFunctionRead: ", len);
     
     if(len > remainingBytes)
     {
@@ -158,7 +175,7 @@ uchar usbFunctionRead(uchar *data, uchar len)
 
 uchar usbFunctionWrite(uchar *data, uchar len)
 {
-    DEBUG_LOG_VAL("usbFunctionWrite: ", len);
+    //DEBUG_LOG_VAL("usbFunctionWrite: ", len);
 
     if(expectingPointer == true && len >= 2)
     {
@@ -190,7 +207,7 @@ uchar usbFunctionWrite(uchar *data, uchar len)
     }
     else
     {
-        DEBUG_LOG_STRING("Write Ongoing");
+        //DEBUG_LOG_STRING("Write Ongoing");
     }
 
     return len;
@@ -201,12 +218,12 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
     usbRequest_t    *rq = (void *)data;
     rq = rq;
 
-    DEBUG_LOG_STRING("usbFunctionSetup");
-    DEBUG_LOG_VAL("Request Type: ", rq->bmRequestType);
-    DEBUG_LOG_VAL("Request: ", rq->bRequest);
-    DEBUG_LOG_VAL("Index: ", rq->wIndex.word);
-    DEBUG_LOG_VAL("Value: ", rq->wValue.word);
-    DEBUG_LOG_VAL("Length: ", rq->wLength.word);
+    //DEBUG_LOG_STRING("usbFunctionSetup");
+    //DEBUG_LOG_VAL("Request Type: ", rq->bmRequestType);
+    //DEBUG_LOG_VAL("Request: ", rq->bRequest);
+    //DEBUG_LOG_VAL("Index: ", rq->wIndex.word);
+    //DEBUG_LOG_VAL("Value: ", rq->wValue.word);
+    //DEBUG_LOG_VAL("Length: ", rq->wLength.word);
 
     if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)
     {
@@ -231,6 +248,10 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
             case USB_REQ_RESET:
             {
                 return handleResetRequest(rq);
+            } break;
+            case USB_REQ_JTAG:
+            {
+                return handleJtagRequest(rq);
             } break;
         }
     }

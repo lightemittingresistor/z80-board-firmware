@@ -8,7 +8,7 @@ ASM_TARGETS_TMP=$(ASM_SRCS:.s.m4=.ihx)
 ASM_TARGETS=$(ASM_TARGETS_TMP:%=build/%)
 
 # Single source C files
-C_SRCS = blinky-world.c
+C_SRCS = blinky-world.c echo.c
 
 C_TARGETS_TMP=$(C_SRCS:.c=.ihx)
 C_TARGETS=$(C_TARGETS_TMP:%=build/%)

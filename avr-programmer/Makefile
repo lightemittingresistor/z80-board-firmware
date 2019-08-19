@@ -81,7 +81,8 @@ ifeq ("$(TARGET)","atmega328p")
 SOURCES += \
 	src/i2c.c \
 	src/mcp23017.c \
-	src/mcp23008.c
+	src/mcp23008.c \
+	src/jtag.c
 endif
 
 # three stages to replace different parts of the filename

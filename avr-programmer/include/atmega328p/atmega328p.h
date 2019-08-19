@@ -28,6 +28,9 @@
 #define RESET 2
 
 // Port D Control Lines
+#define JTAG_PORT PORTD
+#define JTAG_DDR DDRD
+#define JTAG_PIN PIND
 #define JTAG_TDI 3
 #define JTAG_TDO 5
 #define JTAG_TCK 6
@@ -42,6 +45,7 @@ static uint8_t databus_portexpander = MCP23008_ADDRESS(1);
 
 #define BOARD_SUPPORTS_RESET 1
 #define BOARD_SUPPORTS_IOREQ 1
+#define BOARD_SUPPORTS_JTAG 1
 
 // also defined in memorybus.h - here to avoid a circular reference
 extern bool busmaster;

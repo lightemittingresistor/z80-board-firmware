@@ -6,6 +6,7 @@
 
 #include "mcp23008.h"
 #include "i2c.h"
+#include "debug.h"
 
 // MCP23008 registers
 #define IODIR 0x00
@@ -22,6 +23,8 @@
 
 static inline void mcp23008_write_register(uint8_t address, uint8_t reg, uint8_t data)
 {
+    //DEBUG_LOG_VAL("MCP23008: Write reg: ", reg);
+    //DEBUG_LOG_VAL("MCP23008: Write data: ", data);
     uint8_t buffer[2] = { reg, data };
     i2c_write(address, buffer, 2);
 }

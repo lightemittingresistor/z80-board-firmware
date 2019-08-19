@@ -14,5 +14,4 @@ PUBLIC asm_setPins
 asm_setPins:
 	ld a, l
 	out ($00), a
-	out ($08), a
 	ret

@@ -12,6 +12,6 @@ SECTION code_user
 PUBLIC asm_getPins
 
 asm_getPins:
-	in a, ($01)
+	in a, ($00)
 	ld l, a
 	ret

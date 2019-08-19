@@ -17,7 +17,7 @@ const uint8_t USB_REQ_TAKE_CONTROL = 2;
 const uint8_t USB_REQ_POINTER = 3;
 const uint8_t USB_REQ_TRANSFER_DATA = 4;
 const uint8_t USB_REQ_RESET = 5;
-
+const uint8_t USB_REQ_JTAG = 6;
 
 
 #endif

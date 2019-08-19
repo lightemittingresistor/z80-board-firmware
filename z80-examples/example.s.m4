@@ -33,7 +33,7 @@ start:
     out (pio_a_d), a ; set outputs to on
 
 loop:
-    in a, (pio_b_d)
+    in a, (pio_a_d)
     out (pio_a_d), a
     jp loop
 
