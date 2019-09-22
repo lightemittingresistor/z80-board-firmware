@@ -14,6 +14,7 @@ void jtag_init();
 void disable_jtag();
 void jtag_clk();
 void jtag_tms(bool set);
+void jtag_tdi(bool set);
 bool jtag_tdo();
 
 #endif

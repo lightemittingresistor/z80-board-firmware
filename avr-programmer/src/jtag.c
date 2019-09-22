@@ -44,6 +44,18 @@ void jtag_tms(bool set)
     }
 }
 
+void jtag_tdi(bool set)
+{
+    if(set)
+    {
+        JTAG_PORT |= (1 << JTAG_TDI);
+    }
+    else
+    {
+        JTAG_PORT &= ~(1 << JTAG_TDI);
+    }
+}
+
 bool jtag_tdo()
 {
     return (JTAG_PIN & (1 << JTAG_TDO)) == (1 << JTAG_TDO);

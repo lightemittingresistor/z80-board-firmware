@@ -148,6 +148,23 @@ usbMsgLen_t handleJtagRequest(usbRequest_t* rq)
     return 0;
 }
 
+usbMsgLen_t handleJtagIORequest(usbRequest_t* rq)
+{
+    //DEBUG_LOG_STRING("handleJtagIORequest");
+
+    bool tms = (rq->wValue.bytes[0] & 1) == 1;
+    bool tdi = (rq->wValue.bytes[0] & 2) == 2;
+
+    scratch[0] = jtag_tdo() ? 1 : 0;
+
+    jtag_tms(tms);
+    jtag_tdi(tdi);
+    jtag_clk();
+
+    usbMsgPtr = (usbMsgPtr_t)scratch;
+    return 1;
+}
+
 uchar usbFunctionRead(uchar *data, uchar len)
 {
     //DEBUG_LOG_VAL("usbFunctionRead: ", len);
@@ -252,6 +269,10 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
             case USB_REQ_JTAG:
             {
                 return handleJtagRequest(rq);
+            } break;
+            case USB_REQ_JTAG_IO:
+            {
+                return handleJtagIORequest(rq);
             } break;
         }
     }
